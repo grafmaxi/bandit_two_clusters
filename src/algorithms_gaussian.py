@@ -1,163 +1,211 @@
 """
-Algorithms for binary clustering when the noise is standard-normal
-
+Algorithms for binary clustering when the noise is standard-normal.
 """
 import numpy as np
 
 
-def cesh_gaussian(m, rows, depth, budget):
+def cesh_gaussian(means_matrix, rows, depth, budget):
     """
-    performing sequential halving for a subsampled set of arms
-    
+    Perform sequential halving for a subsampled set of arms.
+
     Parameters
-    -------
-    m: MATRIX OF ARMS MEANS.
-    rows: ROWS TO SAMPLE INDICES FROM.
-    depth: NUMBER OF HALVING STEPS.
-    budget: MAXIMAL NUMBER OF SAMPLES.
-    
+    ----------
+    means_matrix : np.ndarray
+        Matrix of arm means.
+    rows : list
+        Rows to sample indices from.
+    depth : int
+        Number of halving steps.
+    budget : int
+        Maximal number of samples.
+
     Returns
     -------
-    indices: INDEX PAIR THAT REMAINS AFTER THE LAST HALVING STEP.
-    cost: NUMBER OF SAMPLES THAT WERE REQUIRED.
+    indices : list
+        Index pair that remains after the last halving step.
+    cost : int
+        Number of samples that were required.
     """
-    d = m.shape[1]
-    # subsample index-pairs
-    indices = [choices(rows, k=2**depth), choices(range(d), k=2**depth)]
+    num_features = means_matrix.shape[1]
+    # Subsample index-pairs
+    indices = [choices(rows, k=2**depth), choices(range(num_features), k=2**depth)]
     cost = 0
-    for l in range(depth):
-        sample_num = int(budget/(2**(depth-l+1)*depth))
-        # set sample effort
-        step_means = np.zeros(2**(depth-l))
-        for i in range(2**(depth-l)):
+    for halving_step in range(depth):
+        sample_num = int(budget / (2**(depth - halving_step + 1) * depth))
+        # Set sample effort
+        step_means = np.zeros(2**(depth - halving_step))
+        for i in range(2**(depth - halving_step)):
             step_means[i] = abs(
                 np.random.normal(
-                    m[0, indices[1][i]]
-                    -m[indices[0][i], indices[1][i]],
-                    np.sqrt(2/sample_num)))
-            cost += 2*sample_num
-        # eliminating indices corresponding to smallest means in absolute value
+                    means_matrix[0, indices[1][i]] -
+                    means_matrix[indices[0][i], indices[1][i]],
+                    np.sqrt(2 / sample_num)
+                )
+            )
+            cost += 2 * sample_num
+        # Eliminate indices corresponding to smallest means in absolute value
         index_sort = np.argsort(-step_means)
-        indices[0] = [indices[0][i] for i in index_sort[: int(2**(depth-l-1))]]
-        indices[1] = [indices[1][i] for i in index_sort[: int(2**(depth-l-1))]]
+        indices[0] = [indices[0][i] for i in index_sort[: int(2**(depth - halving_step - 1))]]
+        indices[1] = [indices[1][i] for i in index_sort[: int(2**(depth - halving_step - 1))]]
     return indices, cost
 
-def cr_gaussian(m, delta):
+
+def cr_gaussian(means_matrix, delta):
     """
-    finding an index from a different cluster than the index 0
+    Find an index from a different cluster than index 0.
 
     Parameters
     ----------
-    m : MATRIX OF ARMS MEANS.
-    delta : RISK LEVEL.
+    means_matrix : np.ndarray
+        Matrix of arm means.
+    delta : float
+        Risk level.
 
     Returns
     -------
-    arm : ROW INDEX.
-    count : NUMBER OF SAMPLES THAT WERE REQUIRED.
-
+    candidate_indices : list
+        Row and column indices.
+    cost : int
+        Number of samples that were required.
     """
-    [n, d] = m.shape
+    num_items, num_features = means_matrix.shape
     terminate = False
-    k = 1
-    # start with budget 2**1 and double at each iteration
-    cost = 0
+    iteration = 1
+    cost = 0  # Start with budget 2**1 and double at each iteration
     while not terminate:
-        l = 1
-        while (l*2**(l+1) <= 2**(k+1) and
-               l < int(
-                   np.log(16*n*d*np.log(16*np.log(8*n*d)/delta))/np.log(2))+1):
-            cand = cesh_gaussian(m, range(n), l, 2**(k+1))
-            cost += cand[ 1 ]
-            arm = cand[ 0 ]
-            if (abs(
-                    np.random.normal(m[0, arm[1]]-m[arm[0], arm[1]],
-                                     np.sqrt(1/2**(k-1))))
-                    > 2**((2-k)/2)*np.sqrt(np.log(k**3/(0.15*delta)))):
-                cost += 2**(k+1)
+        halving_step = 1
+        while (
+            halving_step * 2**(halving_step + 1) <= 2**(iteration + 1) and
+            halving_step < int(
+                np.log(16 * num_items * num_features *
+                       np.log(16 * np.log(8 * num_items * num_features) / delta)) /
+                np.log(2)
+            ) + 1
+        ):
+            candidate_row_result = cesh_gaussian(
+                means_matrix, range(num_items), halving_step, 2**(iteration + 1)
+            )
+            cost += candidate_row_result[1]
+            candidate_indices = candidate_row_result[0]
+            if (
+                abs(
+                    np.random.normal(
+                        means_matrix[0, candidate_indices[1]] -
+                        means_matrix[candidate_indices[0], candidate_indices[1]],
+                        np.sqrt(1 / 2**(iteration - 1))
+                    )
+                ) > 2**((2 - iteration) / 2) * np.sqrt(np.log(iteration**3 / (0.15 * delta)))
+            ):
+                cost += 2**(iteration + 1)
                 terminate = True
                 break
-            l += 1
-            cost += 2**(k+1)
-        k += 1
-    return arm, cost
+            halving_step += 1
+            cost += 2**(iteration + 1)
+        iteration += 1
+    return candidate_indices, cost
 
-def cbc_gaussian(m, can_row_index, delta):
+
+def cbc_gaussian(means_matrix, candidate_row_index, delta):
     """
-    clusteering if we are given can_row_index from a different cluster than
-    index 0
+    Perform clustering if we are given candidate_row_index from a different
+    cluster than index 0.
 
     Parameters
     ----------
-    m : MATRIX OF ARM MEANS.
-    can_row_index : ROW INDEX.
-    delta : RISK LEVEK.
+    means_matrix : np.ndarray
+        Matrix of arm means.
+    candidate_row_index : int
+        Row index.
+    delta : float
+        Risk level.
 
     Returns
     -------
-    clusters: LABELS INDICES BY DETECTED CLUSTERS
-    count: NUMBER OF SAMPLES THAT WERE REQUIRED.
-
+    clusters : np.ndarray
+        Labels indices by detected clusters.
+    cost : int
+        Number of samples that were required.
     """
-    [n, d] = m.shape
-    cost = 0
-    clusters = np.zeros(n)
-    k = int(np.ceil(np.log(n)/np.log(2)))
-    # start with budget 2**k and double at each iteration
-    cost = 0
+    num_items, num_features = means_matrix.shape
+    clusters = np.zeros(num_items)
+    iteration = int(np.ceil(np.log(num_items) / np.log(2)))
+    cost = 0  # Start with budget 2**iteration and double at each iteration
     while clusters[0] == 0:
-        l = 1
-        while (l*2**(l+1) <= 2**(k+1) and
-                l < int(
-                    np.log(
-                        16*n*d*np.log(
-                            16*np.log(8*n*d)/delta))/np.log(2))+1):
-            can_col = cesh_gaussian(m, [can_row_index], l, 2**(k+1))
-            cost += can_col[1]
-            can_col_index = can_col[0][1]
-            if (abs(
-                    np.random.normal(int(2**k/n)*(m[0, can_col_index]
-                                      - m[can_row_index,can_col_index]),
-                                      np.sqrt(2*int(2**k/n))))
-                    > 3*np.sqrt(
-                        4*int(2**k/n)*np.log(n*k**3/(0.15*delta)))):
+        halving_step = 1
+        while (
+            halving_step * 2**(halving_step + 1) <= 2**(iteration + 1) and
+            halving_step < int(
+                np.log(
+                    16 * num_items * num_features *
+                    np.log(16 * np.log(8 * num_items * num_features) / delta)
+                ) / np.log(2)
+            ) + 1
+        ):
+            candidate_column_result = cesh_gaussian(
+                means_matrix, [candidate_row_index], halving_step, 2**(iteration + 1)
+            )
+            cost += candidate_column_result[1]
+            candidate_column_index = candidate_column_result[0][1]
+            if (
+                abs(
+                    np.random.normal(
+                        int(2**iteration / num_items) *
+                        (means_matrix[0, candidate_column_index] -
+                         means_matrix[candidate_row_index, candidate_column_index]),
+                        np.sqrt(2 * int(2**iteration / num_items))
+                    )
+                ) > 3 * np.sqrt(
+                    4 * int(2**iteration / num_items) *
+                    np.log(num_items * iteration**3 / (0.15 * delta))
+                )
+            ):
                 clusters[0] = 1
-                cost += 2*int(2**k/n)
-                for ind in range(1, n):
-                    if (abs(
-                            np.random.normal(int(2**k/n)
-                                             *(m[can_row_index, can_col_index]
-                                               -m[ind, can_col_index]),
-                                             np.sqrt(2*int(2**k/n))))
-                            >np.sqrt(
-                                4*int(2**k/n)*np.log(
-                                    n*k**3/(0.15*delta)))):
+                cost += 2 * int(2**iteration / num_items)
+                for ind in range(1, num_items):
+                    if (
+                        abs(
+                            np.random.normal(
+                                int(2**iteration / num_items) *
+                                (means_matrix[candidate_row_index, candidate_column_index] -
+                                 means_matrix[ind, candidate_column_index]),
+                                np.sqrt(2 * int(2**iteration / num_items))
+                            )
+                        ) > np.sqrt(
+                            4 * int(2**iteration / num_items) *
+                            np.log(num_items * iteration**3 / (0.15 * delta))
+                        )
+                    ):
                         clusters[ind] = 1
-                        cost += 2*int(2**k/n)
+                        cost += 2 * int(2**iteration / num_items)
                 break
-            cost += 2*int(2**k/n)
-            l += 1
-        k += 1
-    return(clusters, cost)
+            cost += 2 * int(2**iteration / num_items)
+            halving_step += 1
+        iteration += 1
+    return clusters, cost
 
-def cluster_gaussian(m, delta):
+
+def cluster_gaussian(means_matrix, delta):
     """
-    clusteering algorithm, combining cr and cbc
+    Clustering algorithm, combining cr and cbc.
+
     Parameters
     ----------
-    m : MATRIX OF ARM MEANS.
-    delta : RISK LEVEK.
+    means_matrix : np.ndarray
+        Matrix of arm means.
+    delta : float
+        Risk level.
 
     Returns
     -------
-    clusters: LABELS INDICES BY DETECTED CLUSTERS
-    count: NUMBER OF SAMPLES THAT WERE REQUIRED.
-
+    clusters : np.ndarray
+        Labels indices by detected clusters.
+    cost : int
+        Number of samples that were required.
     """
-    [can_row_indices, cr_cost] = cr_gaussian(m, delta/2)
-    if(m[0,:]== m[can_row_indices[0],:]).all():
-        return(np.nan, np.nan)
+    candidate_indices, cr_cost = cr_gaussian(means_matrix, delta / 2)
+    if (means_matrix[0, :] == means_matrix[candidate_indices[0], :]).all():
+        return np.nan, np.nan
     else:
-        [clusters, cbc_cost] = cbc_gaussian(m, can_row_indices[0], delta/2)
+        clusters, cbc_cost = cbc_gaussian(means_matrix, candidate_indices[0], delta / 2)
         cost = cbc_cost + cr_cost
-        return(clusters, cost)
+        return clusters, cost
