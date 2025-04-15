@@ -1,7 +1,8 @@
 """
 Algorithms for binary clustering when the noise is standard-normal.
 """
-import numpy as np
+import numpy as np # type: ignore
+from random import choices
 
 
 def cesh_gaussian(means_matrix, rows, depth, budget):
