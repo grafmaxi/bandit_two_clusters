@@ -22,6 +22,7 @@ class Experiment1(BaseExperiment):
         self.t_max = config.t_max
         
     def run_single_iteration(self, seed: int) -> Dict[str, Any]:
+        print(seed)
         """
         Run a single iteration of the experiment.
         
@@ -42,19 +43,16 @@ class Experiment1(BaseExperiment):
         cluster_budgets = np.zeros((self.spars_grid_size, self.time_grid_size))
         km_errors = np.zeros((self.spars_grid_size, self.time_grid_size))
         km_budgets = np.zeros((self.spars_grid_size, self.time_grid_size))
-        
         # Generate true clusters
         true_clusters = np.random.permutation(
             1 * (np.array(range(self.num_items)) < self.theta * self.num_items)
         )
         i_a, i_b = get_cluster_representatives(true_clusters)
-        
         # Iterate over sparsity levels
         for s_ind in range(self.spars_grid_size):
             # Generate data matrix
             sparsity = int((self.num_features-1)*s_ind/(self.spars_grid_size-1)+1)
             M = self._generate_data_matrix(sparsity, true_clusters)
-            
             # Run CR algorithm
             cr_arms, cr_budget = cr_gaussian(M, self.delta/2)
             cr_budgets[s_ind] = cr_budget
@@ -87,7 +85,6 @@ class Experiment1(BaseExperiment):
                 km_budgets[s_ind, t_ind] = int(t/(self.num_items*self.num_features))*(self.num_items*self.num_features)
                 km_clusters = kmeans_budget(M, t)
                 km_errors[s_ind, t_ind] = 1 - clusters_equal(true_clusters, km_clusters)
-                
         return {
             'cr_errors': cr_errors,
             'cr_budgets': cr_budgets,

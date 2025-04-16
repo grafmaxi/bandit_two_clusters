@@ -18,7 +18,7 @@ class Experiment3(BaseExperiment):
             Dictionary containing iteration results
         """
         np.random.seed(seed)
-        
+        print(seed)
         # Initialize output arrays
         cr_budgets = np.zeros(len(self.config.theta_vec))
         cbc_budgets = np.zeros(len(self.config.theta_vec))
@@ -28,24 +28,21 @@ class Experiment3(BaseExperiment):
         for theta_idx, theta in enumerate(self.config.theta_vec):
             # Generate true clusters
             true_clusters = np.random.permutation(
-                1 * (np.array(range(self.config.num_items)) < theta * self.config.num_items)
+                1 * (np.array(range(self.config.num_items)) < theta)
             )
             i_a, i_b = get_cluster_representatives(true_clusters)
             
             # Generate data matrix
             M = self._generate_data_matrix(true_clusters)
-            
             # Run CR algorithm
             _, cr_budget = cr_gaussian(M, self.config.delta/2)
             cr_budgets[theta_idx] = cr_budget
-            
             # Run CBC algorithm
             if true_clusters[0] == 0:
                 _, cbc_budget = cbc_gaussian(M, i_a, self.config.delta/2)
             else:
                 _, cbc_budget = cbc_gaussian(M, i_b, self.config.delta/2)
             cbc_budgets[theta_idx] = cbc_budget
-            
             # Run cluster algorithm
             _, cluster_budget = cluster_gaussian(M, self.config.delta)
             cluster_budgets[theta_idx] = cluster_budget

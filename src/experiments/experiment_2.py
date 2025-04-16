@@ -17,6 +17,7 @@ class Experiment2(BaseExperiment):
             Dictionary containing iteration results
         """
         np.random.seed(seed)
+        print(seed)
         
         # Initialize output arrays
         mean_budgets = np.zeros([len(self.config.num_items_array), len(self.config.delta_array)])
