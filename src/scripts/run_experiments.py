@@ -2,6 +2,7 @@
 Script to run all experiments and save results.
 """
 import argparse
+import multiprocessing as mp
 from pathlib import Path
 from typing import List, Optional
 
@@ -9,6 +10,8 @@ from src.experiments.experiment_1 import Experiment1 # type: ignore
 from src.experiments.experiment_2 import Experiment2 # type: ignore
 from src.experiments.experiment_3 import Experiment3 # type: ignore
 from src.config.experiment_config import get_config
+
+mp.set_start_method('spawn', force=True)
 
 def run_experiments(experiment_names: Optional[List[str]] = None,
                    output_dir: str = "results",

@@ -5,7 +5,7 @@ import numpy as np # type: ignore
 @dataclass
 class BaseConfig:
     """Base configuration class with common parameters"""
-    monte_carlo_runs: int = 32  # Number of Monte Carlo runs
+    monte_carlo_runs: int = 8  # Number of Monte Carlo runs
     delta: float = 0.8  # Confidence parameter
     theta: float = 0.5  # Proportion of items in one cluster
 
