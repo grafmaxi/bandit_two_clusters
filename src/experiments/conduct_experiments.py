@@ -24,8 +24,9 @@ def save_results(results_1, results_2, results_3):
         results_2: Results from simulation_iteration_2
         results_3: Results from simulation_iteration_3
     """
-    # Create results directory
-    results_dir = os.path.join(os.getcwd(), "results")
+    # Create results directory within src folder
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    results_dir = os.path.join(current_dir, "results")
     os.makedirs(results_dir, exist_ok=True)
     
     # Save each result list as a separate pickle file
