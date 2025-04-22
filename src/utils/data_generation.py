@@ -1,16 +1,16 @@
 """
-Utility functions for generating synthetic data.
+Utility functions for generating synthetic data for clustering experiments.
 """
 import numpy as np # type: ignore
 from typing import Tuple
 
 def generate_clusters(num_items: int, theta: float) -> np.ndarray:
     """
-    Generate random cluster assignments.
+    Generate random cluster assignments for a two-cluster problem.
     
     Args:
         num_items: Number of items to cluster
-        theta: Proportion of items in one cluster
+        theta: Proportion of items in one cluster (between 0 and 1)
         
     Returns:
         Array of cluster assignments (0 or 1)
@@ -25,14 +25,14 @@ def generate_data_matrix(num_items: int,
                         signal_strength: float,
                         true_clusters: np.ndarray) -> np.ndarray:
     """
-    Generate data matrix with specified properties.
+    Generate a data matrix with specified properties for a two-cluster problem.
     
     Args:
         num_items: Number of rows (items)
         num_features: Number of columns (features)
-        sparsity: Number of non-zero features
-        signal_strength: Strength of non-zero features
-        true_clusters: Array of true cluster assignments
+        sparsity: Number of non-zero features in the signal
+        signal_strength: Strength of the non-zero features
+        true_clusters: Array of true cluster assignments (0 or 1)
         
     Returns:
         Data matrix of shape (num_items, num_features)
@@ -40,7 +40,7 @@ def generate_data_matrix(num_items: int,
     # Generate cluster means
     m_a = np.zeros(num_features)
     m_b = np.zeros(num_features)
-    m_b[range(sparsity)] = np.zeros(sparsity) + signal_strength/np.sqrt(sparsity)
+    m_b[range(sparsity)] = np.zeros(sparsity) + signal_strength
     
     # Generate data matrix
     M = np.zeros([num_items, num_features])
@@ -50,24 +50,4 @@ def generate_data_matrix(num_items: int,
         else:
             M[i,:] = m_b
             
-    return M
-
-def generate_experiment_data(config: object) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Generate data for an experiment based on its configuration.
-    
-    Args:
-        config: Experiment configuration object
-        
-    Returns:
-        Tuple of (data matrix, true cluster assignments)
-    """
-    true_clusters = generate_clusters(config.num_items, config.theta)
-    M = generate_data_matrix(
-        config.num_items,
-        config.num_features,
-        config.sparsity,
-        config.signal_strength,
-        true_clusters
-    )
-    return M, true_clusters 
+    return M 
