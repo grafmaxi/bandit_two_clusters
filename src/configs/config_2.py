@@ -4,6 +4,8 @@ import numpy as np
 
 # Experiment 2 parameters
 config_2 = {
+    # Monte Carlo runs
+    "monte_carlo_runs": 5000,
     # Matrix dimensions
     "num_items_array": np.array([100, 200, 500, 1000, 2000, 5000]),
     "multiplier": 10,
@@ -19,9 +21,7 @@ config_2 = {
     # Cluster settings
     "theta": 0.5,
     "sparsity": 10,
-    "signal_strength": 5,
-    # Monte Carlo runs
-    "monte_carlo_runs": 8
+    "signal_strength": 5
 }
 
 # Calculate derived parameters

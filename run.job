@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#SBATCH --partition=all
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=1-00:00
+#SBATCH --chdir=/work/graf9/bandit_two_clusters 
+#SBATCH --mail-type=ALL
+#SBATCH --output=slurm-%j.out
+
+export PYTHONPATH=$(pwd)
+eval "$(conda shell.bash hook)"
+conda activate newenv
+
+echo "Activated environment: $(conda info --envs | grep \*)"
+
+python -m src.runners.run_experiment1_sparsity
+python -m src.runners.run_experiment2_signal
+python -m src.runners.run_experiment3_proportion

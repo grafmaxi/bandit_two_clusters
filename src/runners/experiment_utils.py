@@ -53,7 +53,7 @@ def run_parallel_experiment(experiment_function, num_runs, num_processes=None):
     """
     # Use min(CPU count, 4) processes by default
     if num_processes is None:
-        num_processes = min(mp.cpu_count(), 4)
+        num_processes = min(mp.cpu_count(), 16)
     
     # Set up process pool and map experiment function to seeds
     with mp.Pool(processes=num_processes) as pool:

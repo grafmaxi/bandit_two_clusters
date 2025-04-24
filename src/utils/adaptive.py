@@ -207,51 +207,25 @@ def rand_argmin(vec):
     return argmin_idx
     
 def update_wgt(y_i, q_i, P_hat, sigma_i, t, ucbconstant):
-    # computes min_k' min_h' KL(q_k', q_k)
-    # y_i should be N_tot(i,:) vector dim L, total number of the question asked
-    # for question l with item i.
-
+    """
+    Simplified weight update: assume h_i_ = 1, so weights depend on squared differences of P_hat clusters.
+    """
     K, L = P_hat.shape
     wgt = np.ones(L)
-    wgt_val = np.inf  # minimum value of the confidence
-
+    wgt_val = np.inf
     k = sigma_i
-
-    # computation of \hat{h}_i (c: 2 \hat{h}_i - 1)
-    c_2 = ((2 * P_hat[k, :] - 1) ** 2)
-    c_1 = ((2 * P_hat[k, :] - 1) * (1 - 2 * q_i))
-    # c_0 = ((1 - 2 * q_i) ** 2)
-    c = np.minimum(np.maximum(0, -(y_i @ c_1) / (y_i @ c_2) / 2), 1)  # minimizing y.*(c_2*c^2 + c_1 * c + c_0) with c_2 >= 0
-    # q_i_k = (c * P_hat[k, :] + 1) / 2
-    h_i_ = (c + 1.0) / 2.0
-
-    # UCB-like update on h_i_
-    # h_i_ = np.maximum(h_i_ - (2 / np.sum(y_i) * np.log(1 + t * np.log(t) ** 2)) ** 0.5, 0.5)
-    h_i_ = np.maximum(h_i_ - (ucbconstant * np.log(t) / np.sum(y_i)) ** 0.5, 0.5)  # UCB1-like update
-
-    q_i_k = h_i_ * P_hat[k, :] + (1 - h_i_) * (1 - P_hat[k, :])
-
-    # computation of k' != k and (2 h' - 1)
+    # With h_i_ always 1, q_i_k simplifies to P_hat[k]
+    q_i_k = P_hat[k, :]
+    
+    # Compare q_i_k to each other cluster P_hat[k_]
     for k_ in range(K):
-        if np.array_equal(sigma_i, k_):  # skip if k_ is the same as k
+        if k_ == k:  # skip if same cluster
             continue
-
-        # Removed: didn't use h', just use h_i_
-        # find best c (or h': c = 2h' - 1)
-        c_2 = ((2 * P_hat[k_, :] - 1) ** 2)
-        c_1 = ((2 * P_hat[k_, :] - 1) * (1 - 2 * q_i_k))
-        c = np.minimum(np.maximum(0, -(y_i @ c_1) / (y_i @ c_2) / 2), 1)  # minimizing y.*(c_2*c^2 + c_1 * c + c_0) with c_2 >= 0
-        h_i_ = (c + 1.0) / 2.0
-
-        q_i_k_ = h_i_ * P_hat[k_, :] + (1 - h_i_) * (1 - P_hat[k_, :])
-
-        wgt_ = (q_i_k - q_i_k_) ** 2
-        wgt_val_ = y_i @ wgt_  # value of the confidence term 'd'
-        
-        if wgt_val_ <= wgt_val:
-            wgt = np.maximum(wgt_, 0.00001)  # keep the KL value
-            
-            wgt_val = wgt_val_  # keep the smallest confidence value
+        diff_sq = (q_i_k - P_hat[k_, :]) ** 2
+        wgt_val_k = y_i @ diff_sq
+        if wgt_val_k <= wgt_val:
+            wgt = np.maximum(diff_sq, 1e-5)
+            wgt_val = wgt_val_k
     
     return wgt
 

@@ -54,30 +54,11 @@ def simulation_iteration_4(seed: int) -> Dict[str, Any]:
         adapt_samp_total_budget = np.nan
         # Handle error case appropriately - maybe return NaNs or default error/budget
 
-    # --- Run Your Modified Algorithm(s) ---
-    # Replace with actual calls to your algorithm(s) from src/utils/adaptive.py
-    # Ensure they accept necessary parameters from config_4 and return comparable metrics.
-    print("Running custom_algorithm_1...")
-    try:
-        # Example call structure:
-        # custom_algo1_result = your_modified_algorithm_1(true_sigma, config_4)
-        # custom_algo1_error = custom_algo1_result['error']
-        # custom_algo1_budget = custom_algo1_result['budget']
-        custom_algo1_error = np.random.rand() # Placeholder
-        custom_algo1_budget = np.random.randint(50000, 150000) # Placeholder
-        print(f"Custom Algorithm 1 finished. Error: {custom_algo1_error:.4f}, Budget: {custom_algo1_budget}")
-    except Exception as e:
-        print(f"ERROR running custom_algorithm_1: {e}")
-        custom_algo1_error = np.nan
-        custom_algo1_budget = np.nan
-
     # --- Collect Results ---
     results = {
         "seed": seed,
         "adaptive_sampling_error": adapt_samp_error,
         "adaptive_sampling_budget": adapt_samp_total_budget,
-        "custom_algo1_error": custom_algo1_error, # Replace with actual results
-        "custom_algo1_budget": custom_algo1_budget, # Replace with actual results
         # Add results for other custom algorithms if comparing more than one
     }
 

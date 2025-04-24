@@ -5,13 +5,13 @@ import numpy as np
 # Experiment 4 parameters
 config_4 = {
     # Monte Carlo settings
-    "monte_carlo_runs": 1, # Adjust as needed
+    "monte_carlo_runs": 10, # Adjust as needed
 
     # Adaptive Sampling Algorithm Parameters (extracted from adaptive_sampling.py)
     "n": 1000,  # number of users
     "K": 2,  # number of clusters
     "L": 5,  # number of questions
-    "T": 1000000, # Total budget/time steps
+    "T": 80000, # Total budget/time steps
     "p_norm": np.inf, # Norm for normalizing r vectors
     "w": 1,  # Parameter for min_w and do_uniform (context specific)
     "ucb_constant": 0.1,  # UCB constant for weight updates
