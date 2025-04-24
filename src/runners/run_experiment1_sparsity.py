@@ -23,6 +23,6 @@ if __name__ == "__main__":
     )
     
     # Save the results
-    save_results(results, "results_1", "sparsity_experiment")
+    save_results(results, "results_1")
     
     print("Experiment 1 completed successfully")

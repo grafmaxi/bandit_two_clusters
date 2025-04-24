@@ -23,6 +23,6 @@ if __name__ == "__main__":
     )
     
     # Save the results
-    save_results(results, "results_2", "signal_experiment")
+    save_results(results, "results_2")
     
     print("Experiment 2 completed successfully")
