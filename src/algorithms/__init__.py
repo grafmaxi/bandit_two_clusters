@@ -9,6 +9,6 @@ __all__ = [
     'cbc_gaussian',
     'cluster_gaussian',
     'kmeans_budget'
-]
+] 
 
 # This file makes the 'algorithms' directory a Python package. 

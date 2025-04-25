@@ -75,7 +75,7 @@ def simulation_iteration_1(seed: int) -> Tuple[np.ndarray, np.ndarray, np.ndarra
         # Perform CR algorithm
         cr_arms, cr_budget = cr_gaussian(M, 0.4)  # delta/2 = 0.8/2
         cr_budgets[s_idx] = cr_budget
-        cr_errors[s_idx] = 1 - int(true_clusters[0] == true_clusters[cr_arms[0]])
+        cr_errors[s_idx] = int(true_clusters[0] == true_clusters[cr_arms[0]])
         
         # Perform CBC algorithm
         if true_clusters[0] == 0:

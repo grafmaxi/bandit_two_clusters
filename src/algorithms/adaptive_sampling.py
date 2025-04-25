@@ -35,7 +35,7 @@ def adaptive_clustering(sigma, config: dict):
 
     period = np.ceil(T / (4 * np.log(T / n))).astype(int)
     # Randomly generate h (user response probabilities) based on config min/max
-
+    
     # Random cluster assignments (using provided sigma, not random)
     q = np.zeros((n, L))
     r = np.zeros((n, L))
@@ -50,7 +50,7 @@ def adaptive_clustering(sigma, config: dict):
         # Use p_norm from config
         norm_r = np.linalg.norm(r[i, :], ord=p_norm)
         r_[i, :] = r[i, :] / norm_r if norm_r > 0 else r[i, :]
-
+    
     # Initialize N_tot and N_pos
     N_tot = np.zeros((n, L))
     N_pos = np.zeros((n, L))
@@ -58,54 +58,54 @@ def adaptive_clustering(sigma, config: dict):
     hat_r = np.zeros((n, L))
     hat_r_ = np.zeros((n, L))
     hat_p = np.zeros((K, L))
-
+    
     L_stat = np.zeros((K, L))
     # Reinstate initialization of hat_sigma
     hat_sigma = np.random.randint(0, K, size=n)
     xi = np.zeros((K, L))
-
+    
     wgt = np.ones((n, L))
     idx = np.zeros(n)
 
     # Placeholder for results if needed within the loop, adjust as necessary
     # results_over_time = []
-
+    
     cnt = -1
     for t in range(1, T + 1):
         # Sampling scheme - Keep only algidx == 1 logic
-        if np.min(N_tot) <= max(np.sqrt(t / n), 10):
+            if np.min(N_tot) <= max(np.sqrt(t / n), 10):
             # Use w_param from config
             ell_t, W_t = adaptive_utils.do_uniform(N_tot, w_param)
-        else:
+            else:
              # Use w_param from config
             W_t = adaptive_utils.min_w(idx, w_param)
             ell_min_val = np.min(N_tot[W_t[0], :])
             N_tot_i = np.sum(N_tot[W_t[0], :])
-            if ell_min_val <= max(np.sqrt(N_tot_i), 10):
+                if ell_min_val <= max(np.sqrt(N_tot_i), 10):
                 ell_t = np.argmin(N_tot[W_t[0], :])
             else:
                 ell_t = np.argmax(wgt[W_t[0], :])
-
+        
         # Ask user and update statistics
         for i in W_t:
             N_tot[i, ell_t] += 1
             Xil = 2 * (random.random() < q[i, ell_t]) - 1
             if Xil > 0:
                 N_pos[i, ell_t] += 1
-
+            
             # Avoid division by zero if N_tot is 0
             if N_tot[i, ell_t] > 0:
-                hat_q[i, ell_t] = N_pos[i, ell_t] / N_tot[i, ell_t]
+            hat_q[i, ell_t] = N_pos[i, ell_t] / N_tot[i, ell_t]
             else:
                 hat_q[i, ell_t] = 0.5 # Default initial estimate
 
             hat_r[i, ell_t] = 2 * hat_q[i, ell_t] - 1
             L_stat[sigma[i], ell_t] += 1
-
+            
             # Update weights for the adaptive algorithm (always run this now)
             wgt[i, :] = adaptive_utils.update_wgt(N_tot[i, :], hat_q[i, :], hat_p, hat_sigma[i], t, ucb_constant)
-            idx[i] = np.dot(wgt[i, :], N_tot[i, :])
-
+                idx[i] = np.dot(wgt[i, :], N_tot[i, :])
+        
         # Periodic clustering and error update
         if t % period == 0:
             cnt += 1
@@ -116,21 +116,21 @@ def adaptive_clustering(sigma, config: dict):
                     hat_r_[i, :] = hat_r[i, :] / norm_hat_r
                 else:
                     hat_r_[i, :] = hat_r[i, :] # Keep as zeros if norm is zero
-
+            
             # Perform k-means clustering
             kmeans = KMeans(n_clusters=K, max_iter=1000, n_init=5).fit(hat_r_)
             hat_sigma_ = kmeans.labels_
-
+            
             # Use adaptive_utils.calc_err_by_sigma
             err, hat_sigma, k_vec = adaptive_utils.calc_err_by_sigma(hat_sigma_, sigma, K)
-
+            
             # Update xi (clusters' characteristics)
             for k in range(K):
                  # Check if cluster k exists in results, handle empty clusters
                  if k_vec[k] < len(kmeans.cluster_centers_):
-                    xi[k, :] = kmeans.cluster_centers_[k_vec[k]]
+                xi[k, :] = kmeans.cluster_centers_[k_vec[k]]
                  # else: handle case where a cluster has no members assigned by kmeans
-
+            
             # Update p_kl estimates
             for k in range(K):
                 cluster_members = (hat_sigma == k)
@@ -143,12 +143,12 @@ def adaptive_clustering(sigma, config: dict):
                     # Convert back to probability p = (r + 1) / 2
                     hat_p[k, :] = (hat_p[k, :] + 1) / 2
                 # else: handle empty cluster, maybe keep previous estimate or default?
-
+            
             # Update weights and indices for adaptive algorithm (always run this now)
-            for i in range(n):
+                for i in range(n):
                 wgt[i, :] = adaptive_utils.update_wgt(N_tot[i, :], hat_q[i, :], hat_p, hat_sigma[i], t, ucb_constant)
                 idx[i] = np.dot(wgt[i, :], N_tot[i, :])
-
+        
             # Store results periodically if needed, e.g., error rate at this time step
             # current_error = err / n
             # results_over_time.append({'t': t, 'error': current_error, 'hat_sigma': hat_sigma.copy()})
