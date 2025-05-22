@@ -5,9 +5,10 @@ import numpy as np
 # Experiment 2 parameters
 config_2 = {
     # Monte Carlo runs
-    "monte_carlo_runs": 5000,
+    "monte_carlo_runs": 500,
     # Matrix dimensions
-    "num_items_array": np.array([100, 200, 500, 1000, 2000, 5000]),
+    # "num_items_array": np.array([100, 200, 500, 1000, 2000, 5000]),
+    "num_items_array": np.array([10, 20, 50, 100, 200, 500]),
     "multiplier": 10,
     "num_features_array": None,  # Will be calculated as multiplier * num_items_array
     

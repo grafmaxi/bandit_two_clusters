@@ -5,7 +5,7 @@ import numpy as np
 # Experiment 3 parameters
 config_3 = {
     # Monte Carlo settings
-    "monte_carlo_runs": 5000,
+    "monte_carlo_runs": 500,
     
     # Matrix dimensions
     "num_items": 1000,
@@ -20,11 +20,13 @@ config_3 = {
     "sparsity": 100,
     
     # Budget settings
-    "min_budget": 1 * 10**7,
-    "max_budget": 100 * 10**7,
-    "budget_steps": 100
+    "min_budget": 10**6,
+    "max_budget": 10**10,
+    "budget_steps": 20, 
+    "budget_grid": None, # Will be calculated as powers of 2
 }
 
 # Calculate derived parameters
 config_3["theta_size"] = int(np.log2(config_3["num_items"]))
 config_3["theta_array"] = np.array([(2**i) / config_3["num_items"] for i in range(config_3["theta_size"])], dtype=float)
+config_3["budget_grid"] = np.array([(2**i-1)/(2**config_3["budget_steps"]-1)*(config_3["max_budget"]-config_3["min_budget"]) + config_3["min_budget"] for i in range(config_3["budget_steps"])], dtype=float)

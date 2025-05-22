@@ -5,7 +5,7 @@ import numpy as np
 # Experiment 1 parameters
 config_1 = {
     # Monte Carlo settings
-    "monte_carlo_runs": 5000,
+    "monte_carlo_runs": 500,
     
     # Matrix dimensions
     "num_items": 20,

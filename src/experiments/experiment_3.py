@@ -34,13 +34,11 @@ def simulation_iteration_3(seed: int) -> Tuple[np.ndarray, np.ndarray, np.ndarra
         - km_errors: Error rates for K-means algorithm
     """
     # Set random seed
-    print(seed)
     np.random.seed(seed)
-    
     # Initialize output arrays
     theta_size = config_3["theta_size"]
     budget_steps = config_3["budget_steps"]
-    
+    budget_grid = config_3["budget_grid"]
     # Initialize arrays for CR, CBC, and cluster algorithms
     cr_budgets = np.zeros(theta_size)
     cr_errors = np.zeros(theta_size)
@@ -88,7 +86,7 @@ def simulation_iteration_3(seed: int) -> Tuple[np.ndarray, np.ndarray, np.ndarra
         
         # Perform K-means algorithm for different budgets
         for budget_idx in range(budget_steps):
-            budget = int(config_3["min_budget"] + budget_idx * (config_3["max_budget"] - config_3["min_budget"]) / (budget_steps - 1))
+            budget = config_3["budget_grid"][budget_idx]
             km_clusters = kmeans_budget(M, budget)
             km_errors[theta_idx, budget_idx] = 1 - int(clusters_equal(true_clusters, km_clusters))
     

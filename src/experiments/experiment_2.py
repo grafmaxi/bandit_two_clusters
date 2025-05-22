@@ -26,7 +26,7 @@ def simulation_iteration_2(seed: int) -> Tuple[np.ndarray, np.ndarray]:
     """
     # Set random seed
     np.random.seed(seed)
-    print(seed)
+    print("Running iteration", seed)
     
     # Initialize output arrays
     num_items_count = config_2["num_items_count"]

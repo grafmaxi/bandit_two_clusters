@@ -35,7 +35,7 @@ def simulation_iteration_1(seed: int) -> Tuple[np.ndarray, np.ndarray, np.ndarra
     """
     # Set random seed
     np.random.seed(seed)
-    print(seed)
+    print(f"Running Experiment 1 with seed {seed}")
     # Initialize output arrays
     sparsity_grid_size = config_1["num_sparsity_params"]
     budget_steps = config_1["num_budget_steps"]
