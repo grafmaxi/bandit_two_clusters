@@ -1,3 +1,0 @@
-from src.experiments.experiment_1 import simulation_iteration_1
-
-simulation_iteration_1(0)
