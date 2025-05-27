@@ -1,7 +1,11 @@
-"""Experiment 4: Comparison of Adaptive Sampling and Bernoulli Sequential Algorithms."""
+"""
+Experiment 4: Comparison of Adaptive Sampling and Bernoulli Sequential Algorithms.
+
+This experiment compares the performance of adaptive clustering against sequential Bernoulli clustering
+under varying feature dimensions and sparsity levels.
+"""
 
 import numpy as np
-import time
 from typing import Dict, Any
 
 # Import the algorithms to compare
@@ -10,7 +14,7 @@ from src.algorithms.bernoulli_sequential import cluster_bernoulli
 # Import the configuration and utilities
 from src.configs.config_4 import config_4
 from src.utils.clustering import clusters_equal
-from src.utils.data_generation import generate_data_matrix_for_bernoulli, generate_clusters
+from src.utils.data_generation import generate_clusters
 
 def simulation_iteration_4_cluster(seed: int) -> Dict[str, Any]:
     """
@@ -27,33 +31,45 @@ def simulation_iteration_4_cluster(seed: int) -> Dict[str, Any]:
     # Set random seed for this iteration
     np.random.seed(seed)
 
-    # --- Data Generation ---
-    # Use the pre-defined true sigma from config
-    true_sigma = generate_clusters(config_4["num_items"], config_4["theta"] )
+    # Initialize experiment parameters from config
     num_items = config_4["num_items"]
     signal_strength = config_4["signal_strength"]
     feature_grid = config_4["feature_grid"]
     feature_grid_size = len(feature_grid)
     sparsity_grid = config_4["sparsity_grid"]
+    
+    # Initialize result arrays
     cluster_errors = np.zeros(feature_grid_size)
-    cluster_budgets = np.zeros(feature_grid_size)
+    sample_costs = np.zeros(feature_grid_size)
+    
+    # Generate true cluster assignments
+    true_clusters = generate_clusters(num_items, config_4["theta"])
+    
+    # Run experiment for each feature dimension
     for i in range(feature_grid_size):
         num_features = feature_grid[i]
         sparsity = sparsity_grid[i]
+        
+        # Generate sparse feature indices
         spars_indices = np.random.choice(num_features, sparsity, replace=False)
-        p = np.full((2, num_features), 0.5)
-        p[0, spars_indices] = 0.5 + signal_strength/2
-        p[1, spars_indices] = 0.5 - signal_strength/2
-        true_sigma = generate_clusters(num_items, 0.5) 
+        
+        # Set up probability matrix for Bernoulli trials
+        means_matrix = np.full((2, num_features), 0.5)
+        means_matrix[0, spars_indices] = 0.5 + signal_strength/2
+        means_matrix[1, spars_indices] = 0.5 - signal_strength/2
+        
+        # Generate data matrix based on cluster assignments
         data_matrix = np.zeros((num_items, num_features))
         for j in range(num_items):
-            if true_sigma[j] == 1:
-                data_matrix[j,:] = p[0,:]
-            else:
-                data_matrix[j,:] = p[1,:]
-        result = cluster_bernoulli(data_matrix, config_4["delta"])
-        cluster_errors[i] = 1 - clusters_equal(result[0], true_sigma)
-        cluster_budgets[i] = result[1]
-    return cluster_errors, cluster_budgets
+            data_matrix[j,:] = means_matrix[1 if true_clusters[j] == 1 else 0, :]
+            
+        # Run clustering algorithm
+        predicted_clusters, sample_cost = cluster_bernoulli(data_matrix, config_4["delta"])
+        
+        # Record results
+        cluster_errors[i] = 0 if predicted_clusters is None else 1 - clusters_equal(predicted_clusters, true_clusters)
+        sample_costs[i] = sample_cost
+        
+    return cluster_errors, sample_costs
 
 

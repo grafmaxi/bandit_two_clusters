@@ -1,32 +1,35 @@
 """
-Algorithms for binary clustering with standard-normal noise.
+Algorithms for binary clustering with Gaussian noise.
+
+This module implements sequential halving algorithms for clustering with standard normal noise.
+All algorithms assume two-cluster scenarios with known cluster structure.
 """
 import numpy as np # type: ignore
 from typing import Tuple, List, Optional
 from random import choices
 
 def cesh_gaussian(means_matrix: np.ndarray, 
-                 rows: List[int], 
+                 item_indices: List[int], 
                  depth: int, 
                  budget: int) -> Tuple[List[List[int]], int]:
     """
-    Perform sequential halving for a subsampled set of arms.
+    Perform sequential halving for a subsampled set of arms with Gaussian noise.
     
     Args:
-        means_matrix: Matrix of arm means
-        rows: Rows to sample indices from
-        depth: Number of halving steps
-        budget: Maximal number of samples
+        means_matrix: Matrix of arm means (num_items x num_features).
+        item_indices: Item indices to sample from.
+        depth: Number of halving steps.
+        budget: Maximum number of samples.
         
     Returns:
         Tuple containing:
-        - indices: Index pairs that remain after the last halving step
-        - cost: Number of samples that were required
+        - indices: Index pairs (item, feature) that remain after the last halving step.
+        - sample_cost: Number of samples that were used.
     """
     num_features = means_matrix.shape[1]
     # Subsample index-pairs
-    indices = [choices(rows, k=2**depth), choices(range(num_features), k=2**depth)]
-    cost = 0
+    indices = [choices(item_indices, k=2**depth), choices(range(num_features), k=2**depth)]
+    sample_cost = 0
     
     for halving_step in range(depth):
         sample_num = int(budget / (2**(depth - halving_step + 1) * depth))
@@ -41,32 +44,32 @@ def cesh_gaussian(means_matrix: np.ndarray,
                     np.sqrt(2 / sample_num)
                 )
             )
-            cost += 2 * sample_num
+            sample_cost += 2 * sample_num
             
         # Eliminate indices corresponding to smallest means in absolute value
         index_sort = np.argsort(-step_means)
         indices[0] = [indices[0][i] for i in index_sort[: int(2**(depth - halving_step - 1))]]
         indices[1] = [indices[1][i] for i in index_sort[: int(2**(depth - halving_step - 1))]]
         
-    return indices, cost
+    return indices, sample_cost
 
 def cr_gaussian(means_matrix: np.ndarray, delta: float) -> Tuple[List[int], int]:
     """
-    Find an index from a different cluster than index 0.
+    Find an index from a different cluster than index 0 using Gaussian noise.
     
     Args:
-        means_matrix: Matrix of arm means
-        delta: Risk level
+        means_matrix: Matrix of arm means (num_items x num_features).
+        delta: Risk level.
         
     Returns:
         Tuple containing:
-        - candidate_indices: Row and column indices
-        - cost: Number of samples that were required
+        - candidate_indices: Item and feature indices from different cluster.
+        - sample_cost: Number of samples that were used.
     """
     num_items, num_features = means_matrix.shape
     terminate = False
     iteration = 1
-    cost = 0  # Start with budget 2**1 and double at each iteration
+    sample_cost = 0
     
     while not terminate:
         halving_step = 1
@@ -81,7 +84,7 @@ def cr_gaussian(means_matrix: np.ndarray, delta: float) -> Tuple[List[int], int]
             candidate_row_result = cesh_gaussian(
                 means_matrix, range(num_items), halving_step, 2**(iteration + 1)
             )
-            cost += candidate_row_result[1]
+            sample_cost += candidate_row_result[1]
             candidate_indices = candidate_row_result[0]
             
             if (
@@ -93,37 +96,36 @@ def cr_gaussian(means_matrix: np.ndarray, delta: float) -> Tuple[List[int], int]
                     )
                 ) > 2**((2 - iteration) / 2) * np.sqrt(np.log(iteration**3 / (0.15 * delta)))
             ):
-                cost += 2**(iteration + 1)
+                sample_cost += 2**(iteration + 1)
                 terminate = True
                 break
                 
             halving_step += 1
-            cost += 2**(iteration + 1)
+            sample_cost += 2**(iteration + 1)
         iteration += 1
         
-    return candidate_indices, cost
+    return candidate_indices, sample_cost
 
 def cbc_gaussian(means_matrix: np.ndarray, 
                 candidate_row_index: int, 
                 delta: float) -> Tuple[np.ndarray, int]:
     """
-    Perform clustering if we are given candidate_row_index from a different
-    cluster than index 0.
+    Perform clustering given a candidate row from a different cluster than index 0.
     
     Args:
-        means_matrix: Matrix of arm means
-        candidate_row_index: Row index
-        delta: Risk level
+        means_matrix: Matrix of arm means (num_items x num_features).
+        candidate_row_index: Row index presumed to be in a different cluster than item 0.
+        delta: Risk level.
         
     Returns:
         Tuple containing:
-        - clusters: Labels indices by detected clusters
-        - cost: Number of samples that were required
+        - clusters: Labels indices by detected clusters (0 or 1).
+        - sample_cost: Number of samples that were used.
     """
     num_items, num_features = means_matrix.shape
     clusters = np.zeros(num_items)
     iteration = int(np.ceil(np.log(num_items) / np.log(2)))
-    cost = 0  # Start with budget 2**iteration and double at each iteration
+    sample_cost = 0
     
     while clusters[0] == 0:
         halving_step = 1
@@ -139,7 +141,7 @@ def cbc_gaussian(means_matrix: np.ndarray,
             candidate_column_result = cesh_gaussian(
                 means_matrix, [candidate_row_index], halving_step, 2**(iteration + 1)
             )
-            cost += candidate_column_result[1]
+            sample_cost += candidate_column_result[1]
             candidate_column_index = candidate_column_result[0][1]
             
             if (
@@ -156,7 +158,7 @@ def cbc_gaussian(means_matrix: np.ndarray,
                 )
             ):
                 clusters[0] = 1
-                cost += 2 * int(2**iteration / num_items)
+                sample_cost += 2 * int(2**iteration / num_items)
                 
                 for ind in range(1, num_items):
                     if (
@@ -173,27 +175,27 @@ def cbc_gaussian(means_matrix: np.ndarray,
                         )
                     ):
                         clusters[ind] = 1
-                        cost += 2 * int(2**iteration / num_items)
+                        sample_cost += 2 * int(2**iteration / num_items)
                 break
                 
-            cost += 2 * int(2**iteration / num_items)
+            sample_cost += 2 * int(2**iteration / num_items)
             halving_step += 1
         iteration += 1
         
-    return clusters, cost
+    return clusters, sample_cost
 
 def cluster_gaussian(means_matrix: np.ndarray, delta: float) -> Tuple[Optional[np.ndarray], int]:
     """
-    Clustering algorithm, combining cr and cbc.
+    Full clustering algorithm combining CR and CBC with Gaussian noise.
     
     Args:
-        means_matrix: Matrix of arm means
-        delta: Risk level
+        means_matrix: Matrix of arm means (num_items x num_features).
+        delta: Risk level.
         
     Returns:
         Tuple containing:
-        - clusters: Labels indices by detected clusters (None if clustering failed)
-        - cost: Number of samples that were required
+        - clusters: Labels indices by detected clusters (0 or 1), or None if clustering failed.
+        - sample_cost: Total number of samples that were used.
     """
     candidate_indices, cr_cost = cr_gaussian(means_matrix, delta / 2)
     
@@ -201,5 +203,5 @@ def cluster_gaussian(means_matrix: np.ndarray, delta: float) -> Tuple[Optional[n
         return None, cr_cost
     else:
         clusters, cbc_cost = cbc_gaussian(means_matrix, candidate_indices[0], delta / 2)
-        cost = cbc_cost + cr_cost
-        return clusters, cost 
+        total_cost = cbc_cost + cr_cost
+        return clusters, total_cost 

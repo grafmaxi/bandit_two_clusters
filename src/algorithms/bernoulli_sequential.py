@@ -1,6 +1,8 @@
 """
 Algorithms for binary clustering with Bernoulli-distributed responses.
-Sampling is done via individual Bernoulli draws.
+
+This module implements sequential halving algorithms for clustering with Bernoulli trials.
+The algorithms use individual Bernoulli draws for sampling.
 """
 import numpy as np
 # import time # No longer needed here
@@ -9,7 +11,16 @@ from random import choices
 
 # Helper function for sum of Bernoullis
 def sample_sum_bernoulli(n: int, p: float) -> int:
-    """Simulates sum of n Bernoulli(p) trials."""
+    """
+    Simulate sum of n Bernoulli(p) trials.
+    
+    Args:
+        n: Number of trials.
+        p: Success probability for each trial.
+        
+    Returns:
+        Sum of n Bernoulli random variables.
+    """
     if n <= 0:
         return 0
     # Ensure p is within valid probability range [0, 1]
@@ -20,7 +31,7 @@ def sample_sum_bernoulli(n: int, p: float) -> int:
     return value
 
 def cesh_bernoulli(means_matrix: np.ndarray, 
-                   rows: List[int], 
+                   item_indices: List[int], 
                    depth: int, 
                    budget: int) -> Tuple[List[List[int]], int]:
     """
@@ -28,23 +39,23 @@ def cesh_bernoulli(means_matrix: np.ndarray,
     
     Args:
         means_matrix: Matrix of arm means (num_items x num_features).
-        rows: Rows (item indices) to sample indices from.
+        item_indices: Item indices to sample from.
         depth: Number of halving steps.
-        budget: Maximal number of samples.
+        budget: Maximum number of samples.
         
     Returns:
         Tuple containing:
         - indices: Index pairs (item, feature) that remain after the last halving step.
-        - cost: Number of samples that were required.
+        - sample_cost: Number of samples that were used.
     """
     num_items, num_features = means_matrix.shape
     # Subsample index-pairs
-    indices = [choices(rows, k=2**depth), choices(range(num_features), k=2**depth)]
-    cost = 0
+    indices = [choices(item_indices, k=2**depth), choices(range(num_features), k=2**depth)]
+    sample_cost = 0
     
     # Handle potential division by zero if depth is large relative to budget
     if depth <= 0:
-        return indices, cost # Or raise error
+        return indices, sample_cost
     
     for halving_step in range(depth):
         # Avoid division by zero and ensure sample_num is integer >= 0
@@ -59,11 +70,11 @@ def cesh_bernoulli(means_matrix: np.ndarray,
         
         # Ensure sample_num is valid
         if sample_num < 0:
-             continue # or handle error
+             continue
 
         for i in range(num_arms_in_step):
             # Check indices are within bounds
-            item_idx_0 = 0 # Reference item is always 0
+            item_idx_0 = 0  # Reference item is always 0
             item_idx_i = indices[0][i]
             feature_idx_i = indices[1][i]
             
@@ -80,15 +91,15 @@ def cesh_bernoulli(means_matrix: np.ndarray,
             else:
                 step_means[i] = 0
             
-            cost += 2 * sample_num
+            sample_cost += 2 * sample_num
             
         # Eliminate indices corresponding to smallest means in absolute value
         num_to_keep = max(0, int(num_arms_in_step / 2))
-        index_sort = np.argsort(-step_means) # Sort descending by absolute difference
+        index_sort = np.argsort(-step_means)  # Sort descending by absolute difference
         indices[0] = [indices[0][i] for i in index_sort[:num_to_keep]]
         indices[1] = [indices[1][i] for i in index_sort[:num_to_keep]]
         
-    return indices, cost
+    return indices, sample_cost
 
 
 def cr_bernoulli(means_matrix: np.ndarray, delta: float) -> Tuple[List[int], int]:
@@ -101,19 +112,21 @@ def cr_bernoulli(means_matrix: np.ndarray, delta: float) -> Tuple[List[int], int
         
     Returns:
         Tuple containing:
-        - candidate_indices: Row (item) and column (feature) indices.
-        - cost: Number of samples that were required.
+        - candidate_indices: Item and feature indices from different cluster.
+        - sample_cost: Number of samples that were used.
     """
     num_items, num_features = means_matrix.shape
     terminate = False
     iteration = 1
-    cost = 0
+    sample_cost = 0
     
     while not terminate:
         budget_iteration = 2**(iteration + 1)
-        log_arg = 16 * num_items * num_features * np.log(max(1e-9, 16 * np.log(max(1e-9, 8 * num_items * num_features)) / delta)) # Avoid log(<=0)
-        if log_arg <= 1: max_halving_steps = 1
-        else: max_halving_steps = int(np.log(log_arg) / np.log(2)) + 1
+        log_arg = 16 * num_items * num_features * np.log(max(1e-9, 16 * np.log(max(1e-9, 8 * num_items * num_features)) / delta))
+        if log_arg <= 1: 
+            max_halving_steps = 1
+        else: 
+            max_halving_steps = int(np.log(log_arg) / np.log(2)) + 1
         
         halving_step = 1
         while (halving_step * 2**(halving_step + 1) <= budget_iteration and halving_step < max_halving_steps):
@@ -123,7 +136,7 @@ def cr_bernoulli(means_matrix: np.ndarray, delta: float) -> Tuple[List[int], int
             )
             step_cost = candidate_row_result[1]
             candidate_indices = candidate_row_result[0]
-            cost += step_cost
+            sample_cost += step_cost
             
             if not candidate_indices or not candidate_indices[0] or not candidate_indices[1]:
                 halving_step += 1
@@ -140,27 +153,27 @@ def cr_bernoulli(means_matrix: np.ndarray, delta: float) -> Tuple[List[int], int
             
             if samples_per_arm > 0: 
                 diff = abs(mean_0 / samples_per_arm - mean_cand / samples_per_arm)
-                log_thresh_arg = max(1e-9, iteration**3 / (0.15 * delta)) # Avoid log(<=0)
+                log_thresh_arg = max(1e-9, iteration**3 / (0.15 * delta))
                 threshold = (2.0**(-iteration / 2.0)) * np.sqrt(np.log(log_thresh_arg))
                 
                 if diff > threshold:
-                    cost += 2 * samples_per_arm 
+                    sample_cost += 2 * samples_per_arm 
                     terminate = True
                     final_candidate_indices = [item_idx_cand, feature_idx_cand]
-                    return final_candidate_indices, cost
+                    return final_candidate_indices, sample_cost
             
-            cost += 2 * samples_per_arm 
+            sample_cost += 2 * samples_per_arm 
             halving_step += 1
             
         iteration += 1
         if iteration > 100: 
              print("Warning: cr_bernoulli exceeded max iterations.")
              dummy_indices = [0, 0] if num_items > 0 and num_features > 0 else []
-             return dummy_indices, cost
+             return dummy_indices, sample_cost
 
     print("Warning: cr_bernoulli exited loop unexpectedly.")
     final_candidate_indices = [0, 0] if num_items > 0 and num_features > 0 else []
-    return final_candidate_indices, cost
+    return final_candidate_indices, sample_cost
 
 
 def cbc_bernoulli(means_matrix: np.ndarray, 
@@ -171,25 +184,27 @@ def cbc_bernoulli(means_matrix: np.ndarray,
     
     Args:
         means_matrix: Matrix of arm means (num_items x num_features).
-        candidate_row_index: Row index (item) presumed to be in a different cluster than item 0.
+        candidate_row_index: Row index presumed to be in a different cluster than item 0.
         delta: Risk level.
         
     Returns:
         Tuple containing:
         - clusters: Labels indices by detected clusters (0 or 1).
-        - cost: Number of samples that were required.
+        - sample_cost: Number of samples that were used.
     """
     num_items, num_features = means_matrix.shape
-    clusters = np.zeros(num_items, dtype=int) # Initialize clusters as integers
-    iteration = int(np.ceil(np.log(max(1, num_items)) / np.log(2))) if num_items > 0 else 1 # Avoid log(0)
-    cost = 0
-    found_feature = False # Flag to indicate if a separating feature is found
+    clusters = np.zeros(num_items, dtype=int)  # Initialize clusters as integers
+    iteration = int(np.ceil(np.log(max(1, num_items)) / np.log(2))) if num_items > 0 else 1
+    sample_cost = 0
+    found_feature = False  # Flag to indicate if a separating feature is found
     
     while not found_feature:
         budget_iteration = 2**(iteration + 1)
-        log_arg = 16 * num_items * num_features * np.log(max(1e-9, 16 * np.log(max(1e-9, 8 * num_items * num_features)) / delta)) # Avoid log(<=0)
-        if log_arg <= 1: max_halving_steps = 1
-        else: max_halving_steps = int(np.log(log_arg) / np.log(2)) + 1
+        log_arg = 16 * num_items * num_features * np.log(max(1e-9, 16 * np.log(max(1e-9, 8 * num_items * num_features)) / delta))
+        if log_arg <= 1: 
+            max_halving_steps = 1
+        else: 
+            max_halving_steps = int(np.log(log_arg) / np.log(2)) + 1
         
         halving_step = 1
         while (halving_step * 2**(halving_step + 1) <= budget_iteration and halving_step < max_halving_steps):
@@ -199,24 +214,25 @@ def cbc_bernoulli(means_matrix: np.ndarray,
             )
             step_cost = candidate_column_result[1]
             candidate_indices = candidate_column_result[0]
-            cost += step_cost
+            sample_cost += step_cost
             
             if not candidate_indices or not candidate_indices[1]:
                 halving_step += 1
                 continue
                 
             candidate_column_index = candidate_indices[1][0]
-            samples_per_comp = max(1, int(2**iteration / max(1, num_items))) # Avoid division by zero
+            samples_per_comp = max(1, int(2**iteration / max(1, num_items)))  # Avoid division by zero
 
             # Compare item 0 and candidate_row_index using sum of Bernoulli samples
             mean_0 = sample_sum_bernoulli(samples_per_comp, means_matrix[0, candidate_column_index])
             mean_cand = sample_sum_bernoulli(samples_per_comp, means_matrix[candidate_row_index, candidate_column_index])
-            cost_comparison = 2 * samples_per_comp
-            cost += cost_comparison
+            sample_cost += 2 * samples_per_comp
 
-            log_thresh_arg = max(1e-9, num_items * iteration**3 / (0.15 * delta)) # Avoid log(<=0)
-            if samples_per_comp <= 0: threshold_main = np.inf
-            else: threshold_main = 3 * np.sqrt(samples_per_comp * np.log(log_thresh_arg))
+            log_thresh_arg = max(1e-9, num_items * iteration**3 / (0.15 * delta))
+            if samples_per_comp <= 0: 
+                threshold_main = np.inf
+            else: 
+                threshold_main = 3 * np.sqrt(samples_per_comp * np.log(log_thresh_arg))
             
             if abs(mean_0 - mean_cand) > threshold_main:
                 found_feature = True
@@ -225,34 +241,35 @@ def cbc_bernoulli(means_matrix: np.ndarray,
                 threshold_others = np.sqrt(samples_per_comp * np.log(log_thresh_arg))
                 
                 for ind in range(num_items):
-                    if ind == 0 or ind == candidate_row_index: continue
+                    if ind == 0 or ind == candidate_row_index: 
+                        continue
                     
                     # Compare item 'ind' with candidate_row_index using sum of Bernoulli samples
                     mean_ind = sample_sum_bernoulli(samples_per_comp, means_matrix[ind, candidate_column_index])
                     mean_cand_again = sample_sum_bernoulli(samples_per_comp, means_matrix[candidate_row_index, candidate_column_index])
-                    cost += 2 * samples_per_comp
+                    sample_cost += 2 * samples_per_comp
                     
                     if abs(mean_cand_again - mean_ind) > threshold_others:
                         clusters[ind] = 0 
                     else:
                         clusters[ind] = 1
                         
-                return clusters, cost
+                return clusters, sample_cost
             
             halving_step += 1
             
         iteration += 1
         if iteration > 100 + int(np.ceil(np.log(max(1, num_items)) / np.log(2))): 
              print("Warning: cbc_bernoulli exceeded max iterations.")
-             return clusters, cost
+             return clusters, sample_cost
              
     print("Warning: cbc_bernoulli exited loop unexpectedly.")
-    return clusters, cost
+    return clusters, sample_cost
 
 
 def cluster_bernoulli(means_matrix: np.ndarray, delta: float) -> Tuple[Optional[np.ndarray], int]:
     """
-    Clustering algorithm using sum of Bernoulli samples.
+    Full clustering algorithm combining CR and CBC with Bernoulli sampling.
     
     Args:
         means_matrix: Matrix of arm means (num_items x num_features).
@@ -261,19 +278,18 @@ def cluster_bernoulli(means_matrix: np.ndarray, delta: float) -> Tuple[Optional[
     Returns:
         Tuple containing:
         - clusters: Labels indices by detected clusters (0 or 1), or None if clustering failed.
-        - cost: Total number of samples required.
+        - sample_cost: Total number of samples that were used.
     """
-    # Initialize total_cost
-    total_cost = 0
+    sample_cost = 0
     
     # Step 1: Find a candidate item from the other cluster
     candidate_indices, cr_cost = cr_bernoulli(means_matrix, delta / 2)
-    total_cost += cr_cost
+    sample_cost += cr_cost
     
     # Check if cr_bernoulli returned valid indices
     if not candidate_indices or len(candidate_indices) < 2:
          print("Warning: cr_bernoulli failed to return valid candidate indices.")
-         return None, total_cost # Indicate failure
+         return None, sample_cost
          
     candidate_row_index = candidate_indices[0]
 
@@ -283,12 +299,10 @@ def cluster_bernoulli(means_matrix: np.ndarray, delta: float) -> Tuple[Optional[
     
     # Simple check (could be refined with statistical test)
     if np.all(mean_0_check == mean_cand_check):
-         # Decide if returning None or assigning all to cluster 0 is appropriate
-         # Returning None indicates failure to find distinct clusters.
-         return None, total_cost
+         return None, sample_cost
          
     # Step 3: If candidate seems different, proceed with CBC
     else:
         clusters, cbc_cost = cbc_bernoulli(means_matrix, candidate_row_index, delta / 2)
-        total_cost += cbc_cost
-        return clusters, total_cost
+        sample_cost += cbc_cost
+        return clusters, sample_cost
