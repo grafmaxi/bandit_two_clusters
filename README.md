@@ -19,9 +19,9 @@ This repository implements and compares several clustering algorithms designed f
 
 ### Algorithm Components
 Each clustering algorithm consists of three main components:
-- **CESH** (Confidence-based Elimination with Sequential Halving): Feature selection
+- **CESH** (Comparing Entries by Sequential Halving): Feature selection
 - **CR** (Candidate Row): Identifies items from different clusters  
-- **CBC** (Clustering with Best Candidate): Full clustering given a candidate
+- **CBC** (Clustering by Candidate): Full clustering given a candidate
 
 ## Repository Structure
 
