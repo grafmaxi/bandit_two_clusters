@@ -137,22 +137,7 @@ Clustering algorithms return:
 - **Sample Complexity**: Total samples required for clustering
 - **Success Rate**: Fraction of experiments with perfect clustering
 
-## Citation
 
-If you use this code in your research, please cite:
-
-```bibtex
-@article{bandit_clustering_2024,
-  title={Bandit-Based Clustering for Two-Cluster Problems},
-  author={[Authors]},
-  journal={[Journal]},
-  year={2024}
-}
-```
-
-## License
-
-[License information]
 
 ## Contributing
 
