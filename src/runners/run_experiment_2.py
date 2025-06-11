@@ -1,5 +1,5 @@
 """
-Runner for Experiment 2: Varying signal strength.
+Runner for Experiment 2: Varying matrix size.
 """
 
 import multiprocessing as mp
@@ -15,7 +15,7 @@ setup_environment()
 
 if __name__ == "__main__":
     print(
-        f"Running Experiment 2: Varying signal strength with {config_2['monte_carlo_runs']} Monte Carlo runs")
+        f"Running Experiment 2: Varying matrix size with {config_2['monte_carlo_runs']} Monte Carlo runs")
 
     # Run the experiment in parallel
     results = run_parallel_experiment(
