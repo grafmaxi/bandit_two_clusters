@@ -36,7 +36,7 @@ src/
 │   ├── config_1.py     # Experiment 1: varying sparsity
 │   ├── config_2.py     # Experiment 2: varying signal strength
 │   ├── config_3.py     # Experiment 3: varying cluster proportions
-│   └── config_4.py     # Experiment 4: adaptive vs bandit comparison
+│   └── config_4.py     # Experiment 4: compare to existing algorithm  
 ├── experiments/        # Experiment implementations
 │   ├── experiment_1.py # Sparsity experiments
 │   ├── experiment_2.py # Signal strength experiments
@@ -93,9 +93,9 @@ exec(open('src/analysis/results_analysis_1.py').read())
 - **Varied**: Number of informative features
 
 ### Experiment 2: Varying Signal Strength  
-- **Purpose**: Study algorithm performance as signal strength changes
+- **Purpose**: Study algorithm performance as matrix size
 - **Fixed**: Sparsity, cluster proportions
-- **Varied**: Separation between cluster means
+- **Varied**: matrix size
 
 ### Experiment 3: Varying Cluster Proportions
 - **Purpose**: Study algorithm performance with imbalanced clusters
@@ -103,13 +103,12 @@ exec(open('src/analysis/results_analysis_1.py').read())
 - **Varied**: Proportion of items in each cluster
 
 ### Experiment 4: Adaptive vs Bandit Comparison
-- **Purpose**: Compare bandit algorithms against adaptive sampling baselines
+- **Purpose**: Compare our algorithms against baselines
 - **Focus**: Direct comparison of sample efficiency
 
 ## Key Features
 
 - **Modular Design**: Each algorithm component is independently implementable
-- **Comprehensive Evaluation**: Multiple performance metrics and visualizations
 - **Reproducible Research**: Fixed random seeds and detailed configuration management
 - **Efficient Implementation**: Optimized for large-scale Monte Carlo simulations
 
@@ -133,7 +132,6 @@ Clustering algorithms return:
 
 ## Performance Metrics
 
-- **Error Rate**: Fraction of incorrectly clustered items
 - **Sample Complexity**: Total samples required for clustering
 - **Success Rate**: Fraction of experiments with perfect clustering
 

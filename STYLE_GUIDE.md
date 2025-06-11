@@ -28,9 +28,9 @@ This document defines the coding standards and conventions for the Bandit Two Cl
 ## Function Naming Conventions
 
 ### Algorithm Functions
-- `cesh_*`: Confidence-based Elimination with Sequential Halving
+- `cesh_*`: Comparing Entries by Sequential Halving
 - `cr_*`: Candidate Row identification
-- `cbc_*`: Clustering given Best Candidate
+- `cbc_*`: Cluster by Candidate
 - `cluster_*`: Full clustering algorithm (cr + cbc)
 
 ### Utility Functions  
