@@ -13,6 +13,6 @@ __all__ = [
     'cesh_bernoulli',
     'cluster_bernoulli',
     'cr_bernoulli'
-] 
+]
 
-# This file makes the 'algorithms' directory a Python package. 
+# This file makes the 'algorithms' directory a Python package.

@@ -14,15 +14,16 @@ mp.set_start_method('spawn', force=True)
 setup_environment()
 
 if __name__ == "__main__":
-    print(f"Running Experiment 2: Varying signal strength with {config_2['monte_carlo_runs']} Monte Carlo runs")
-    
+    print(
+        f"Running Experiment 2: Varying signal strength with {config_2['monte_carlo_runs']} Monte Carlo runs")
+
     # Run the experiment in parallel
     results = run_parallel_experiment(
-        simulation_iteration_2, 
+        simulation_iteration_2,
         config_2["monte_carlo_runs"]
     )
-    
+
     # Save the results
     save_results(results, "results_2")
-    
+
     print("Experiment 2 completed successfully")

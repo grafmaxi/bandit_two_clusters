@@ -1,1 +1,1 @@
-# This file makes the 'configs' directory a Python package. 
+# This file makes the 'configs' directory a Python package.

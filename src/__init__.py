@@ -1,3 +1,3 @@
 """
 Bandit Two Clusters package.
-""" 
+"""

@@ -4,7 +4,7 @@ from src.configs.config_1 import config_1
 import matplotlib.pyplot as plt
 with open('src/results/results_1.pkl', 'rb') as f:
     data = pickle.load(f)
-    
+
 monte_carlo_runs = config_1["monte_carlo_runs"]
 sparsity_grid_size = config_1["num_sparsity_params"]
 budget_steps = config_1["num_budget_steps"]
@@ -40,14 +40,17 @@ cluster_budgets_lower_quantile = np.zeros(sparsity_grid_size)
 cluster_budgets_upper_quantile = np.zeros(sparsity_grid_size)
 for sind in range(sparsity_grid_size):
     cluster_budgets_mean[sind] = np.mean(cluster_budgets[sind])
-    cluster_budgets_lower_quantile[sind] = np.quantile(cluster_budgets[sind], qlow)
-    cluster_budgets_upper_quantile[sind] = np.quantile(cluster_budgets[sind], qhigh)
+    cluster_budgets_lower_quantile[sind] = np.quantile(
+        cluster_budgets[sind], qlow)
+    cluster_budgets_upper_quantile[sind] = np.quantile(
+        cluster_budgets[sind], qhigh)
 
 print(np.mean(cluster_errors, axis=1))
 
 sparsity_grid = np.zeros(sparsity_grid_size)
 for i in range(sparsity_grid_size):
-    sparsity_grid[i] = int((config_1["num_features"] - 1) * i / (sparsity_grid_size - 1) + 1)
+    sparsity_grid[i] = int((config_1["num_features"] - 1)
+                           * i / (sparsity_grid_size - 1) + 1)
 
 km_confidence_budget = np.zeros(sparsity_grid_size)
 
@@ -58,26 +61,27 @@ for sind in range(sparsity_grid_size):
             break
 
 
-
-plt.figure(dpi=300)   
-plt.plot(sparsity_grid[sind_min:sind_max], 
-         cluster_budgets_mean[sind_min:sind_max], 
+plt.figure(dpi=300)
+plt.plot(sparsity_grid[sind_min:sind_max],
+         cluster_budgets_mean[sind_min:sind_max],
          label='BanditClustering', color='black', linewidth=3)
-plt.plot(sparsity_grid[sind_min:sind_max], 
-         np.mean(cbc_budgets[sind_min:sind_max], axis=1), 
-         label='CBC', color='red', linewidth=2, linestyle = '--')
-plt.plot(sparsity_grid[sind_min:sind_max], 
-         np.mean(cr_budgets[sind_min:sind_max], axis=1), 
-         label='CR', color='blue', linewidth=2, linestyle = '--')
-plt.plot(sparsity_grid[sind_min:sind_max], 
-         km_confidence_budget[sind_min:sind_max], 
-         label='K-means', color='green', linewidth=2, linestyle = ':')
-plt.fill_between(sparsity_grid[sind_min:sind_max], 
-                 cluster_budgets_lower_quantile[sind_min:sind_max], 
-                 cluster_budgets_upper_quantile[sind_min:sind_max], 
-                 color='black', alpha=0.2, label=r'$(5\%, 95\%)$-confidence interval' + '\n'+ 'for BanditClustering')
-plt.plot(sparsity_grid[sind_min:sind_max], 
-         sparsity_grid[sind_min:sind_max], 
+plt.plot(sparsity_grid[sind_min:sind_max],
+         np.mean(cbc_budgets[sind_min:sind_max], axis=1),
+         label='CBC', color='red', linewidth=2, linestyle='--')
+plt.plot(sparsity_grid[sind_min:sind_max],
+         np.mean(cr_budgets[sind_min:sind_max], axis=1),
+         label='CR', color='blue', linewidth=2, linestyle='--')
+plt.plot(sparsity_grid[sind_min:sind_max],
+         km_confidence_budget[sind_min:sind_max],
+         label='K-means', color='green', linewidth=2, linestyle=':')
+plt.fill_between(sparsity_grid[sind_min:sind_max],
+                 cluster_budgets_lower_quantile[sind_min:sind_max],
+                 cluster_budgets_upper_quantile[sind_min:sind_max],
+                 color='black',
+                 alpha=0.2,
+                 label=r'$(5\%, 95\%)$-confidence interval' + '\n' + 'for BanditClustering')
+plt.plot(sparsity_grid[sind_min:sind_max],
+         sparsity_grid[sind_min:sind_max],
          label=r'$s$', color='gray', linewidth=1)
 
 plt.xscale("log")
@@ -85,7 +89,7 @@ plt.yscale("log")
 
 plt.xlabel('sparsity', fontsize=10)
 plt.ylabel('average budget', fontsize=10)
-plt.legend(fontsize=10)
+plt.legend(fontsize=10, bbox_to_anchor=(0.45, 0.6), loc='center left')
 plt.grid(alpha=0.3)
 
 # Show the plot

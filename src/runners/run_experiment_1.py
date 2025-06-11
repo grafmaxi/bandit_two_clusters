@@ -14,15 +14,16 @@ mp.set_start_method('spawn', force=True)
 setup_environment()
 
 if __name__ == "__main__":
-    print(f"Running Experiment 1: Varying sparsity with {config_1['monte_carlo_runs']} Monte Carlo runs")
-    
+    print(
+        f"Running Experiment 1: Varying sparsity with {config_1['monte_carlo_runs']} Monte Carlo runs")
+
     # Run the experiment in parallel
     results = run_parallel_experiment(
-        simulation_iteration_1, 
+        simulation_iteration_1,
         config_1["monte_carlo_runs"]
     )
-    
+
     # Save the results
     save_results(results, "results_1")
-    
+
     print("Experiment 1 completed successfully")
